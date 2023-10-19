@@ -2,56 +2,11 @@ chrome.runtime.onInstalled.addListener(function () {
   console.log("background");
 });
 
-function getVideoContainer() {
-  const videoContainer = Array.from(
-    document.getElementsByClassName("html5-video-container"),
-  );
-  return videoContainer.length > 0 ? videoContainer[0] : null;
-}
-
-function getVideoWrapper() {
-  return getVideoContainer() ? getVideoContainer().parentNode : null;
-}
-
-function getVideoPlayer() {
-  return getVideoContainer() ? getVideoContainer().firstChild : null;
-}
-
-function isAdShowing() {
-  const wrapper = getVideoWrapper();
-  return wrapper !== null
-    ? wrapper !== undefined && String(wrapper.className).includes("ad-showing")
-    : null;
-}
-
 function getSkipButton() {
   const skipAdButton = Array.from(
-    document.getElementsByClassName("ytp-ad-skip-button ytp-button"),
+    document.getElementsByClassName("ytp-ad-skip-button ytp-button")
   );
   return skipAdButton.length > 0 ? skipAdButton[0] : null;
-}
-
-function waitForPlayer() {
-  if (getVideoPlayer()) {
-    hookVideoPlayer();
-  } else {
-    setTimeout(() => {
-      waitForPlayer();
-    }, 200);
-  }
-}
-
-function hookVideoPlayer() {
-  const videoPlayer = getVideoPlayer();
-  videoPlayer.addEventListener("timeupdate", () => {
-    getSkipButton()?.click();
-  });
-
-  if (isAdShowing()) {
-    videoPlayer.currentTime = videoPlayer.duration - 1;
-    videoPlayer.pause();
-    videoPlayer.play();
-  }
 }
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -60,9 +15,35 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     String(tab.url).includes("https://www.youtube.com/watch")
   ) {
     console.log("on youtube");
+    // Execute the content script in the tab's context
     chrome.scripting.executeScript({
       target: { tabId: tabId },
-      function: waitForPlayer,
+      function: function() {
+        const videoPlayer = document.querySelector("video.html5-main-video");
+        if (videoPlayer) {
+          videoPlayer.addEventListener("timeupdate", () => {
+            const skipButton = document.querySelector(".ytp-ad-skip-button");
+            if (skipButton) {
+              skipButton.click();
+            }
+          });
+
+          const wrapper = videoPlayer.parentElement;
+          if (wrapper) {
+            function isAdShowing() {
+              return (
+                wrapper !== undefined && String(wrapper.className).includes("ad-showing")
+              );
+            }
+
+            if (isAdShowing()) {
+              videoPlayer.currentTime = videoPlayer.duration - 1;
+              videoPlayer.pause();
+              videoPlayer.play();
+            }
+          }
+        }
+      }
     });
   }
 });

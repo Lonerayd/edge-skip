@@ -7,11 +7,16 @@
     "service_worker": "background.js"
   },
   "permissions": [
+    "storage",
     "activeTab",
     "scripting",
     "tabs"
   ],
   "host_permissions": [
     "https://www.youtube.com/*"
-  ]
+  ],
+  "content_scripts": [{
+    "matches": ["https://www.youtube.com/*"],
+    "js": ["background.js"]
+  }]
 }

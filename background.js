@@ -1,21 +1,37 @@
-function clickSkipAdButton() {
-  // Check if there are any "Skip Ad" buttons and click them
-  const skipAdButtons = Array.from(document.getElementsByClassName("ytp-ad-skip-button ytp-button"));
-  if (skipAdButtons.length > 0) {
-    skipAdButtons[0].click();
-    console.log("skip: clicked the 'Skip Ad' button");
-  } else {
-    console.log("skip: no 'Skip Ad' button found");
+
+let observer;
+function globalSkipBtn() {
+  if(!observer){
+    const targetNode = document.body;
+  const config = { childList: true, subtree: true };
+  console.log("checking for skip");
+  observer = new MutationObserver(function (mutationsList, observer) {
+    const skipDelayedButtons = Array.from(document.getElementsByClassName("ytp-ad-skip-button ytp-button"));
+    if (skipDelayedButtons.length > 0) {
+      skipDelayedButtons[0].click();
+      console.log("clicked");
+      observer.disconnect(); // Stop observing once the button is clicked.
+
+    }
+  });
+
+  observer.observe(targetNode, config);
   }
+  
 }
 
+// Rest of your code remains the same.
+
+
 function skipAds() {
+  
   const htmlVideoContainers = Array.from(document.getElementsByClassName("html5-video-container"));
   if (htmlVideoContainers.length === 0) {
     console.log("skip: no video containers found");
      
   } else {
     console.log("skip: video containers found");
+    
 
     
 
@@ -31,20 +47,9 @@ function skipAds() {
         if (videoPlayer) {
           console.log("skip: video player found");
           videoPlayer.currentTime = 99999;
-          // const skipAdButtons = Array.from(document.getElementsByClassName("ytp-ad-skip-button ytp-button"));
-          // if (skipAdButtons.length > 0) {
-          //   skipAdButtons[0].click();
-          //   adFound = true;
-          // }
-          clickSkipAdButton();
+       
         }
       }
-    }
-
-    
-
-    if (!adFound) {
-      console.log("skip: no ad found in any containers");
     }
   }
 }
@@ -52,12 +57,17 @@ function skipAds() {
 
 function onVideoStart() {
   console.log("Video started");
+  globalSkipBtn();
   skipAds();
+  // clickSkipAdButton();
+ 
 }
 
 function onVideoEnd() {
   console.log("Video ended");
   skipAds();
+  // clickSkipAdButton();
+ 
 }
 
 chrome.tabs?.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -73,8 +83,10 @@ chrome.tabs?.onUpdated.addListener((tabId, changeInfo, tab) => {
         const videoPlayer = document.querySelector("video.html5-main-video");
         
         if (videoPlayer) {
+          
           videoPlayer.addEventListener("play", onVideoStart);
           videoPlayer.addEventListener("ended", onVideoEnd);
+          
         }
         
   
